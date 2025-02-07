@@ -6,6 +6,8 @@ from supabase import create_client, Client
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import datetime
+from bson import ObjectId
+
 
 from schemas import imageSchema, imagesSchema
 
@@ -60,10 +62,21 @@ class Image(Resource):
 
         return {'images': imagesSchema.dump(images)}
 
+    def delete(self):
+        if 'userid' not in request.form:
+            return {"message": "userid required !!"}
+
+        imgid: str = request.form['imgid']
+        try:
+            dele = images_data.find_one_and_delete({"_id": ObjectId(imgid)})
+            return {"message": "deleted successfully", "deleted_document": imageSchema.dump(dele)}
+        except Exception:
+            return {"message": "Unknown error while deleting"}
+
     def patch(self):
         if 'userid' not in request.form:
             return {"message": "missing data !!!"}
-
+        imgid: str = request.form['imgid']
         userId: str = request.form['userid']
         userAddress: str = request.form['userAddress']
         userName: str = request.form['userName']
@@ -99,8 +112,10 @@ class Image(Resource):
                 )
             except marshmallow.exceptions.ValidationError:
                 return {"message": "data format not correct"}, 500
-            id = images_data.insert_one(data_to_push).inserted_id
-            return {"message": "file was saved in server folder", "url": public_url, "inserted_id": str(id)}
+            up = images_data.find_one_and_update(
+                {"_id": ObjectId(imgid)}, {"$set": imageSchema.load(data_to_push)})
+            id = imgid
+            return {"message": "data got updated", "url": public_url, "updated_document_id": str(id)}
         else:
             return {"message": "no file was sent in request"}, 401
 
