@@ -129,6 +129,8 @@ celerybeat.pid
 
 # Environments
 .env
+
+img_files
 .venv
 env/
 venv/
